@@ -1,0 +1,2 @@
+Hello from java-demo.
+This object is uploaded to the local RustFS cluster.

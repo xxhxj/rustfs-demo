@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RustFS Java Demo</title>
+  <style>
+    :root {
+      --bg: #efe6d6;
+      --ink: #2a2118;
+      --muted: #7a6854;
+      --paper: #fbf6ec;
+      --line: #d7c4a8;
+      --rust: #b4451e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      color: var(--ink);
+      font-family: Georgia, "Songti SC", serif;
+      background:
+        radial-gradient(circle at 12% 0%, #f7ecda, transparent 42%),
+        repeating-linear-gradient(0deg, transparent 0 27px, rgba(180, 69, 30, 0.06) 27px 28px),
+        var(--bg);
+    }
+    main {
+      width: min(560px, 100%);
+      padding: 36px 32px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: 8px 10px 0 rgba(42, 33, 24, 0.08);
+    }
+    .kicker {
+      margin: 0 0 8px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--rust);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    p.lead {
+      margin: 0 0 28px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      background: #fff;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px 16px;
+      border: 0;
+      background: var(--rust);
+      color: #fffaf3;
+      font: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .result, .error {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+    .error { color: var(--rust); }
+    .result dt {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+    .result dd {
+      margin: 6px 0 16px;
+      word-break: break-all;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+    }
+    a { color: var(--rust); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">JAVA · S3</p>
+    <h1>上传并取预签名</h1>
+    <p class="lead">文件会传到本机 RustFS 的 java-demo 桶，然后给出 10 分钟有效的下载地址。</p>
+    <form id="form">
+      <label for="file">选择文件</label>
+      <input id="file" name="file" type="file" required />
+      <button type="submit" id="submit">上传</button>
+    </form>
+    <p class="error" id="error" hidden></p>
+    <dl class="result" id="result" hidden>
+      <dt>对象</dt>
+      <dd id="object-key"></dd>
+      <dt>预签名 GET</dt>
+      <dd><a id="presign-link" href="#" target="_blank" rel="noreferrer"></a></dd>
+    </dl>
+  </main>
+  <script>
+    const form = document.getElementById("form");
+    const submit = document.getElementById("submit");
+    const error = document.getElementById("error");
+    const result = document.getElementById("result");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      error.hidden = true;
+      result.hidden = true;
+      const file = document.getElementById("file").files[0];
+      if (!file) return;
+      const body = new FormData();
+      body.append("file", file);
+      submit.disabled = true;
+      try {
+        const res = await fetch("/api/upload", { method: "POST", body });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "上传失败");
+        document.getElementById("object-key").textContent = "s3://" + data.bucket + "/" + data.key;
+        const link = document.getElementById("presign-link");
+        link.href = data.url;
+        link.textContent = data.url;
+        result.hidden = false;
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
