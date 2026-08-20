@@ -32,7 +32,7 @@ def env(name: str, default: str | None = None) -> str:
 
 
 def content_type_for(key: str, provided: str | None = None) -> str:
-    """文本对象补 charset=utf-8，避免浏览器按 GBK 预览乱码。"""
+    """按扩展名补 Content-Type；文本再加 charset=utf-8，避免预览乱码或被浏览器当附件下载。"""
     type_ = (provided or "").strip()
     name = (key or "").lower()
     if not type_ or type_.lower() == "application/octet-stream":
@@ -40,13 +40,33 @@ def content_type_for(key: str, provided: str | None = None) -> str:
             type_ = "text/html"
         elif name.endswith(".json"):
             type_ = "application/json"
-        elif name.endswith((".txt", ".log", ".md", ".csv")):
+        elif name.endswith(".xml"):
+            type_ = "application/xml"
+        elif name.endswith(".css"):
+            type_ = "text/css"
+        elif name.endswith(".js"):
+            type_ = "text/javascript"
+        elif name.endswith(".csv"):
+            type_ = "text/csv"
+        elif name.endswith((".txt", ".log", ".md")):
             type_ = "text/plain"
+        elif name.endswith(".pdf"):
+            type_ = "application/pdf"
+        elif name.endswith(".png"):
+            type_ = "image/png"
+        elif name.endswith((".jpg", ".jpeg")):
+            type_ = "image/jpeg"
+        elif name.endswith(".gif"):
+            type_ = "image/gif"
+        elif name.endswith(".svg"):
+            type_ = "image/svg+xml"
+        elif name.endswith(".webp"):
+            type_ = "image/webp"
         else:
             type_ = "application/octet-stream"
     lower = type_.lower()
     if "charset=" not in lower and (
-        lower.startswith("text/") or any(token in lower for token in ("json", "xml", "javascript"))
+        lower.startswith("text/") or any(token in lower for token in ("json", "xml", "javascript", "svg"))
     ):
         return f"{type_}; charset=utf-8"
     return type_
@@ -91,13 +111,14 @@ def upload_fileobj(s3, bucket: str, key: str, fileobj, content_type: str | None 
     )
 
 
-def presign_get(s3, bucket: str, key: str, expires: int = 600) -> str:
+def presign_get(s3, bucket: str, key: str, expires: int = 600, content_type: str | None = None) -> str:
     return s3.generate_presigned_url(
         ClientMethod="get_object",
         Params={
             "Bucket": bucket,
             "Key": key,
-            "ResponseContentType": content_type_for(key),
+            "ResponseContentType": content_type_for(key, content_type),
+            "ResponseContentDisposition": "inline",
         },
         ExpiresIn=expires,
     )

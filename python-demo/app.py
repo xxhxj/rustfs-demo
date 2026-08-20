@@ -43,7 +43,7 @@ def api_upload():
         s3 = create_s3_client()
         ensure_bucket(s3, bucket)
         upload_fileobj(s3, bucket, key, uploaded, uploaded.mimetype)
-        url = presign_get(s3, bucket, key)
+        url = presign_get(s3, bucket, key, content_type=uploaded.mimetype)
         return jsonify({"ok": True, "bucket": bucket, "key": key, "url": url})
     except Exception as exc:
         return fail(str(exc), 500)

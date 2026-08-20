@@ -115,5 +115,5 @@ def _upload_one(
         "filePath": file_path,
         "fileSize": size,
         "businessKey": business_key,
-        "url": presign_get(s3, bucket, file_path),
+        "url": presign_get(s3, bucket, file_path, content_type=mime),
     }
