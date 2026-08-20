@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from flask import Flask, jsonify, request, send_from_directory
 
+from exam_report import upload_exam_reports
 from rustfs_client import (
     PROJECT_ROOT,
     create_s3_client,
@@ -48,8 +49,27 @@ def api_upload():
         return fail(str(exc), 500)
 
 
+@app.get("/exam-report.html")
+def exam_report_page():
+    return send_from_directory(WEB_DIR, "exam-report.html")
+
+
+@app.post("/api/exam-report/upload")
+def api_exam_report_upload():
+    files = [item for item in request.files.getlist("files") if item and item.filename]
+    if not files:
+        return fail("请选择文件")
+    try:
+        payload = upload_exam_reports(files, request.form.get("businessKey"))
+        status = 200 if payload.get("ok") else 500
+        return jsonify(payload), status
+    except Exception as exc:
+        return fail(str(exc), 500)
+
+
 def main() -> None:
     print("Python 前端  http://127.0.0.1:18880")
+    print("体检报告  http://127.0.0.1:18880/exam-report.html")
     app.run(host="127.0.0.1", port=18880, debug=False)
 
 

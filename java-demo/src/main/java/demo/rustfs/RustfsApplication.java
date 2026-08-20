@@ -9,6 +9,7 @@ public class RustfsApplication {
     public static void main(String[] args) {
         SpringApplication.run(RustfsApplication.class, args);
         System.out.println("Java 前端  http://127.0.0.1:18881");
+        System.out.println("体检报告  http://127.0.0.1:18881/exam-report.html");
         System.out.println("桶 " + Rustfs.BUCKET + "  endpoint " + Rustfs.ENDPOINT);
     }
 }

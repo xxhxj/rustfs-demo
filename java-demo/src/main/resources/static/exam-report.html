@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>体检报告批量上传 · Java</title>
+  <style>
+    :root {
+      --bg: #efe6d6;
+      --ink: #2a2118;
+      --muted: #7a6854;
+      --paper: #fbf6ec;
+      --line: #d7c4a8;
+      --rust: #b4451e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 16px;
+      color: var(--ink);
+      font-family: Georgia, "Songti SC", serif;
+      background:
+        radial-gradient(circle at 12% 0%, #f7ecda, transparent 42%),
+        repeating-linear-gradient(0deg, transparent 0 27px, rgba(180, 69, 30, 0.06) 27px 28px),
+        var(--bg);
+    }
+    main {
+      width: min(640px, 100%);
+      padding: 36px 32px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      box-shadow: 8px 10px 0 rgba(42, 33, 24, 0.08);
+    }
+    .kicker {
+      margin: 0 0 8px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      color: var(--rust);
+    }
+    h1 { margin: 0 0 8px; font-size: 32px; font-weight: 600; }
+    p.lead { margin: 0 0 28px; color: var(--muted); line-height: 1.5; }
+    label { display: block; margin: 16px 0 8px; font-size: 14px; }
+    label:first-of-type { margin-top: 0; }
+    input[type="file"], input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px dashed var(--line);
+      background: #fff;
+      font: inherit;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px 16px;
+      border: 0;
+      background: var(--rust);
+      color: #fffaf3;
+      font: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    .result, .error { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .error { color: var(--rust); }
+    .item {
+      margin: 0 0 16px;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .item strong { font-family: Georgia, "Songti SC", serif; }
+    a { color: var(--rust); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">JAVA · EXAM REPORT</p>
+    <h1>体检报告批量上传</h1>
+    <p class="lead">
+      文件传到桶 <code>inesa-bg-examreport</code>，并写入 <code>OP_MANAGE.TB_ATTACHMENT</code>。
+      BUSINESS_TYPE 固定为 EXAM_REPORT_BUCKET。
+      <a href="/">返回普通上传</a>
+    </p>
+    <form id="form">
+      <label for="files">选择文件（可多选）</label>
+      <input id="files" name="files" type="file" multiple required />
+      <label for="businessKey">BUSINESS_KEY（可选，业务主键）</label>
+      <input id="businessKey" name="businessKey" type="text" maxlength="50" placeholder="可留空" />
+      <button type="submit" id="submit">批量上传</button>
+    </form>
+    <p class="error" id="error" hidden></p>
+    <div class="result" id="result" hidden></div>
+  </main>
+  <script>
+    const form = document.getElementById("form");
+    const submit = document.getElementById("submit");
+    const error = document.getElementById("error");
+    const result = document.getElementById("result");
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      error.hidden = true;
+      result.hidden = true;
+      const files = document.getElementById("files").files;
+      if (!files.length) return;
+      const body = new FormData();
+      for (const file of files) body.append("files", file);
+      const businessKey = document.getElementById("businessKey").value.trim();
+      if (businessKey) body.append("businessKey", businessKey);
+      submit.disabled = true;
+      try {
+        const res = await fetch("/api/exam-report/upload", { method: "POST", body });
+        const data = await res.json();
+        if (!data.items || !data.items.length) {
+          throw new Error(data.error || (data.errors && data.errors[0] && data.errors[0].error) || "上传失败");
+        }
+        let html = "<p>桶 " + data.bucket + " · " + data.businessType + "</p>";
+        for (const item of data.items) {
+          html += '<div class="item"><strong>' + item.fileName + '</strong><br/>'
+            + item.filePath + '<br/>'
+            + '<a href="' + item.url + '" target="_blank" rel="noreferrer">预签名预览</a></div>';
+        }
+        if (data.errors && data.errors.length) {
+          html += '<p class="error">部分失败：</p>';
+          for (const err of data.errors) {
+            html += '<div class="item">' + err.fileName + ' · ' + err.error + '</div>';
+          }
+        }
+        result.innerHTML = html;
+        result.hidden = false;
+      } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

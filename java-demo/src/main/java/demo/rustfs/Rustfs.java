@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-final class Rustfs {
+public final class Rustfs {
 
     private static final Map<String, String> FILE_ENV = readDotEnv();
     static final String ENDPOINT = env("RUSTFS_ENDPOINT", "http://127.0.0.1:19000");
@@ -141,7 +141,7 @@ final class Rustfs {
     }
 
     /** 文本类对象补上 charset=utf-8，否则浏览器预览会按系统默认编码（中文 Windows 常是 GBK）乱码。 */
-    static String contentTypeFor(String key, String provided) {
+    public static String contentTypeFor(String key, String provided) {
         String type = provided == null ? "" : provided.trim();
         if (type.isEmpty() || "application/octet-stream".equalsIgnoreCase(type)) {
             type = guessContentType(key);
